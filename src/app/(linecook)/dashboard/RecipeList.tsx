@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import type { RecipeRow } from '@/db/recipes';
 import { ChatDrawer } from '@/components/ChatDrawer';
+import { BottomNav } from '@/components/BottomNav';
 
 type FilterType = 'ALL' | 'Saute' | 'Grill' | 'Fryer' | 'Pantry' | 'Pizza';
 
@@ -36,13 +37,13 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
       </header>
 
       {/* Main content */}
-      <main className="pt-[64px] pb-[100px] px-6 max-w-4xl mx-auto">
+      <main className="pt-[64px] pb-[100px] px-6 max-w-6xl mx-auto">
         {/* Page heading */}
         <div className="py-6 border-b-2 border-[#001b3c] mb-6">
-          <h1 className="font-grotesk font-black uppercase text-[#001b3c] text-4xl tracking-tight leading-none">
+          <h1 className="font-grotesk font-black uppercase text-[#001b3c] text-5xl md:text-6xl tracking-tight leading-none">
             GALLEY RECIPES
           </h1>
-          <p className="text-[#43474e] mt-2 text-base">Pelican Brewery Kitchen Operations</p>
+          <p className="text-[#43474e] mt-2 text-lg">Pelican Brewery Kitchen Operations</p>
         </div>
 
         {/* Search */}
@@ -56,7 +57,7 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
               placeholder="SEARCH RECIPES"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="h-[64px] w-full bg-white border-b-2 border-[#001b3c] pl-12 pr-4 font-grotesk uppercase tracking-widest text-[#001b3c] placeholder:text-[#74777f]/50 focus:border-2 focus:border-[#526a8d] outline-none text-sm"
+              className="h-[64px] w-full bg-white border-b-2 border-[#001b3c] pl-12 pr-4 font-grotesk uppercase tracking-widest text-[#001b3c] placeholder:text-[#74777f]/50 focus:border-2 focus:border-[#526a8d] outline-none text-base"
             />
           </div>
         </div>
@@ -67,7 +68,7 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-6 py-2 font-grotesk font-bold uppercase tracking-[0.1em] text-sm border-2 border-[#001b3c] transition-colors active:translate-y-[2px] active:translate-x-[2px] ${
+              className={`px-6 py-3 font-grotesk font-bold uppercase tracking-[0.1em] text-base border-2 border-[#001b3c] transition-colors active:translate-y-[2px] active:translate-x-[2px] ${
                 filter === f
                   ? 'bg-[#526a8d] text-white'
                   : 'bg-white text-[#001b3c] hover:bg-[#f0f3ff]'
@@ -126,7 +127,7 @@ function RecipeCard({ recipe }: { recipe: RecipeRow }) {
     <Link href={`/dashboard/${recipe.id}`} className="flex">
       <article className="bg-white border-2 border-[#001b3c] flex flex-col overflow-hidden hover:border-[#526a8d] transition-colors duration-200 cursor-pointer w-full group">
         {/* Placeholder band — no image field in schema */}
-        <div className="h-28 bg-[#526a8d]/10 border-b-2 border-[#001b3c] flex items-center justify-center relative">
+        <div className="h-32 bg-[#526a8d]/10 border-b-2 border-[#001b3c] flex items-center justify-center relative">
           <span className="font-grotesk font-bold uppercase tracking-[0.15em] text-xs text-[#526a8d]">
             {recipe.station ?? recipe.recipe_type}
           </span>
@@ -142,14 +143,14 @@ function RecipeCard({ recipe }: { recipe: RecipeRow }) {
 
         {/* Content */}
         <div className="flex flex-col flex-1 p-4 gap-1">
-          <h2 className="font-grotesk font-semibold uppercase text-[#001b3c] text-base leading-tight">
+          <h2 className="font-grotesk font-semibold uppercase text-[#001b3c] text-lg leading-tight">
             {recipe.title}
           </h2>
           {recipe.yield && (
-            <p className="text-[#43474e] text-sm">Yield: {recipe.yield}</p>
+            <p className="text-[#43474e] text-base">Yield: {recipe.yield}</p>
           )}
           {recipe.shelf_life && (
-            <p className="text-[#43474e] text-sm">Shelf life: {recipe.shelf_life}</p>
+            <p className="text-[#43474e] text-base">Shelf life: {recipe.shelf_life}</p>
           )}
         </div>
 
@@ -167,37 +168,3 @@ function RecipeCard({ recipe }: { recipe: RecipeRow }) {
   );
 }
 
-function BottomNav({ activeTab }: { activeTab: string }) {
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
-    { id: 'recipes', label: 'Recipes', icon: 'restaurant_menu', href: '/dashboard' },
-    { id: 'quizzes', label: 'Quizzes', icon: 'quiz', href: '/quiz' },
-    { id: 'settings', label: 'Settings', icon: 'settings', href: '/settings' },
-  ];
-
-  return (
-    <nav className="bg-white border-t-2 border-[#001b3c] h-[80px] fixed bottom-0 w-full flex justify-around z-40">
-      {tabs.map(tab => (
-        <Link
-          key={tab.id}
-          href={tab.href}
-          className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${
-            tab.id === activeTab
-              ? 'bg-[#526a8d] text-white'
-              : 'text-[#001b3c] hover:bg-[#f0f3ff]'
-          }`}
-        >
-          <span
-            className="material-symbols-outlined text-2xl"
-            style={tab.id === activeTab ? { fontVariationSettings: "'FILL' 1" } : {}}
-          >
-            {tab.icon}
-          </span>
-          <span className="font-grotesk font-bold uppercase tracking-wider text-xs">
-            {tab.label}
-          </span>
-        </Link>
-      ))}
-    </nav>
-  );
-}

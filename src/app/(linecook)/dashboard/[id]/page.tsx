@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import RecipeActions from './RecipeActions';
 import QuizCTA from './QuizCTA';
+import { BottomNav } from '@/components/BottomNav';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,13 +37,13 @@ export default async function RecipeDetailPage({
       </header>
 
       {/* Main content */}
-      <main className="pt-[64px] pb-[160px] max-w-4xl mx-auto">
+      <main className="pt-[64px] pb-[160px] max-w-6xl mx-auto">
         {/* Recipe header band */}
         <div className="bg-[#526a8d]/10 border-b-2 border-[#001b3c] px-6 py-8">
           <span className="inline-block font-grotesk font-bold uppercase tracking-widest text-xs text-[#526a8d] border border-[#526a8d] px-2 py-1 mb-3">
             {recipe.recipe_type}
           </span>
-          <h1 className="font-grotesk font-black uppercase text-[#001b3c] text-3xl leading-tight tracking-tight">
+          <h1 className="font-grotesk font-black uppercase text-[#001b3c] text-4xl md:text-5xl leading-tight tracking-tight">
             {recipe.title}
           </h1>
 
@@ -53,7 +54,7 @@ export default async function RecipeDetailPage({
                 <div className="font-grotesk font-bold uppercase tracking-wide text-xs text-[#74777f]">
                   Yield
                 </div>
-                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-sm">{recipe.yield}</div>
+                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-base">{recipe.yield}</div>
               </div>
             )}
             {recipe.prep_time && (
@@ -61,7 +62,7 @@ export default async function RecipeDetailPage({
                 <div className="font-grotesk font-bold uppercase tracking-wide text-xs text-[#74777f]">
                   Prep Time
                 </div>
-                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-sm">{recipe.prep_time}</div>
+                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-base">{recipe.prep_time}</div>
               </div>
             )}
             {recipe.shelf_life && (
@@ -69,7 +70,7 @@ export default async function RecipeDetailPage({
                 <div className="font-grotesk font-bold uppercase tracking-wide text-xs text-[#74777f]">
                   Shelf Life
                 </div>
-                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-sm">{recipe.shelf_life}</div>
+                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-base">{recipe.shelf_life}</div>
               </div>
             )}
             {recipe.plateware && (
@@ -77,7 +78,7 @@ export default async function RecipeDetailPage({
                 <div className="font-grotesk font-bold uppercase tracking-wide text-xs text-[#74777f]">
                   Plateware
                 </div>
-                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-sm">{recipe.plateware}</div>
+                <div className="font-grotesk font-bold text-[#001b3c] mt-1 text-base">{recipe.plateware}</div>
               </div>
             )}
           </div>
@@ -88,7 +89,7 @@ export default async function RecipeDetailPage({
           {/* Ingredients */}
           {recipe.ingredients.length > 0 && (
             <section>
-              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-lg border-l-4 border-[#526a8d] pl-4 mb-4">
+              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-xl md:text-2xl border-l-4 border-[#526a8d] pl-4 mb-4">
                 Ingredients
               </h2>
               <div className="border-2 border-[#001b3c] bg-white divide-y divide-[#74777f]/30">
@@ -96,9 +97,9 @@ export default async function RecipeDetailPage({
                   const { qty, name } = parseIngredient(ing);
                   return (
                     <div key={i} className="py-3 flex justify-between items-center px-4">
-                      <span className="font-sans text-[#001b3c] text-base">{name}</span>
+                      <span className="font-sans text-[#001b3c] text-lg">{name}</span>
                       {qty && (
-                        <span className="font-grotesk font-bold text-xs bg-[#e7eeff] border border-[#74777f] px-2 py-1 ml-4 whitespace-nowrap flex-shrink-0">
+                        <span className="font-grotesk font-bold text-sm bg-[#e7eeff] border border-[#74777f] px-2 py-1 ml-4 whitespace-nowrap flex-shrink-0">
                           {qty}
                         </span>
                       )}
@@ -112,7 +113,7 @@ export default async function RecipeDetailPage({
           {/* Cook Steps */}
           {recipe.cook_steps.length > 0 && (
             <section>
-              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-lg border-l-4 border-[#526a8d] pl-4 mb-4">
+              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-xl md:text-2xl border-l-4 border-[#526a8d] pl-4 mb-4">
                 Cook Steps
               </h2>
               <div className="space-y-3">
@@ -127,7 +128,7 @@ export default async function RecipeDetailPage({
                     <span className="text-[#526a8d] font-grotesk font-black text-xl flex-shrink-0 leading-none mt-0.5">
                       {i + 1}.
                     </span>
-                    <p className="font-sans text-[#001b3c] text-base leading-relaxed">{step}</p>
+                    <p className="font-sans text-[#001b3c] text-lg leading-relaxed">{step}</p>
                   </div>
                 ))}
               </div>
@@ -137,7 +138,7 @@ export default async function RecipeDetailPage({
           {/* Plate Steps */}
           {recipe.plate_steps.length > 0 && (
             <section>
-              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-lg border-l-4 border-[#526a8d] pl-4 mb-4">
+              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-xl md:text-2xl border-l-4 border-[#526a8d] pl-4 mb-4">
                 Plating Steps
               </h2>
               <div className="space-y-3">
@@ -152,7 +153,7 @@ export default async function RecipeDetailPage({
                     <span className="text-[#526a8d] font-grotesk font-black text-xl flex-shrink-0 leading-none mt-0.5">
                       {i + 1}.
                     </span>
-                    <p className="font-sans text-[#001b3c] text-base leading-relaxed">{step}</p>
+                    <p className="font-sans text-[#001b3c] text-lg leading-relaxed">{step}</p>
                   </div>
                 ))}
               </div>
@@ -162,7 +163,7 @@ export default async function RecipeDetailPage({
           {/* Allergens */}
           {recipe.allergens && recipe.allergens.length > 0 && (
             <section>
-              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-lg border-l-4 border-[#526a8d] pl-4 mb-4">
+              <h2 className="font-grotesk font-bold uppercase tracking-wide text-[#001b3c] text-xl md:text-2xl border-l-4 border-[#526a8d] pl-4 mb-4">
                 Allergens
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -184,30 +185,7 @@ export default async function RecipeDetailPage({
       </main>
 
       {/* Bottom Nav */}
-      <nav className="bg-white border-t-2 border-[#001b3c] h-[80px] fixed bottom-0 w-full flex justify-around z-40">
-        {[
-          { label: 'Dashboard', icon: 'dashboard', href: '/dashboard' },
-          { label: 'Recipes', icon: 'restaurant_menu', href: '/dashboard', active: true },
-          { label: 'Quizzes', icon: 'quiz', href: '/quiz' },
-          { label: 'Settings', icon: 'settings', href: '/settings' },
-        ].map(tab => (
-          <Link
-            key={tab.label}
-            href={tab.href}
-            className={`flex flex-col items-center justify-center flex-1 h-full gap-1 transition-colors ${
-              tab.active ? 'bg-[#526a8d] text-white' : 'text-[#001b3c] hover:bg-[#f0f3ff]'
-            }`}
-          >
-            <span
-              className="material-symbols-outlined text-2xl"
-              style={tab.active ? { fontVariationSettings: "'FILL' 1" } : {}}
-            >
-              {tab.icon}
-            </span>
-            <span className="font-grotesk font-bold uppercase tracking-wider text-xs">{tab.label}</span>
-          </Link>
-        ))}
-      </nav>
+      <BottomNav activeTab="recipes" />
 
       {/* Chat FAB + Drawer (client) */}
       <RecipeActions recipeId={recipe.id} />
