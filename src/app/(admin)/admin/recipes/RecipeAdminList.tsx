@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import type { RecipeRow } from '@/db/recipes';
+import ImportButton from './ImportButton';
 
 type StatusFilter = 'ALL' | 'draft' | 'published' | 'archived';
 
@@ -37,13 +38,16 @@ export default function RecipeAdminList({ initialRecipes }: { initialRecipes: Re
             RECIPE MANAGEMENT
           </span>
         </div>
-        <Link
-          href="/admin/recipes/new"
-          className="flex items-center gap-1 px-4 py-2 bg-[#526a8d] text-white border-2 border-[#001b3c] font-grotesk font-bold uppercase tracking-wide text-xs hover:bg-[#3a5273] transition-colors"
-        >
-          <span className="material-symbols-outlined text-base">add</span>
-          NEW RECIPE
-        </Link>
+        <div className="flex items-center gap-2">
+          <ImportButton />
+          <Link
+            href="/admin/recipes/new"
+            className="flex items-center gap-1 px-4 py-2 bg-[#526a8d] text-white border-2 border-[#001b3c] font-grotesk font-bold uppercase tracking-wide text-xs hover:bg-[#3a5273] transition-colors"
+          >
+            <span className="material-symbols-outlined text-base">add</span>
+            NEW RECIPE
+          </Link>
+        </div>
       </header>
 
       <main className="pt-[64px] pb-10 px-6 max-w-5xl mx-auto">
