@@ -2,6 +2,7 @@ import { getRecipe } from '@/db/recipes';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import RecipeActions from './RecipeActions';
+import QuizCTA from './QuizCTA';
 
 export const dynamic = 'force-dynamic';
 
@@ -177,6 +178,9 @@ export default async function RecipeDetailPage({
             </section>
           )}
         </div>
+
+        {/* Quiz CTA — sits at the end of the recipe content */}
+        <QuizCTA recipeId={recipe.id} recipeTitle={recipe.title} />
       </main>
 
       {/* Bottom Nav */}
@@ -205,8 +209,8 @@ export default async function RecipeDetailPage({
         ))}
       </nav>
 
-      {/* FABs + Drawers (client) */}
-      <RecipeActions recipeId={recipe.id} recipeTitle={recipe.title} />
+      {/* Chat FAB + Drawer (client) */}
+      <RecipeActions recipeId={recipe.id} />
     </div>
   );
 }
