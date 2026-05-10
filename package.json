@@ -9,7 +9,9 @@
     "lint": "next lint",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "seed": "tsx src/scripts/seed-from-csv.ts"
+    "seed": "tsx src/scripts/seed-from-csv.ts",
+    "seed:questions": "tsx src/scripts/seed-questions.ts",
+    "seed:all": "npm run seed && npm run seed:questions"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.0",

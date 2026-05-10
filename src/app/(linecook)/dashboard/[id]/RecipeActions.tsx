@@ -2,12 +2,32 @@
 
 import { useState } from 'react';
 import { ChatDrawer } from '@/components/ChatDrawer';
+import { QuizDrawer } from '@/components/QuizDrawer';
 
-export default function RecipeActions({ recipeId }: { recipeId: string }) {
+export default function RecipeActions({
+  recipeId,
+  recipeTitle,
+}: {
+  recipeId: string;
+  recipeTitle: string;
+}) {
   const [chatOpen, setChatOpen] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
 
   return (
     <>
+      {/* Quiz FAB — sits above chat FAB */}
+      <button
+        onClick={() => setQuizOpen(true)}
+        aria-label="Quiz yourself on this recipe"
+        className="fixed bottom-[172px] right-6 w-14 h-14 bg-[#001b3c] rounded-full shadow-xl flex items-center justify-center text-white hover:bg-[#526a8d] active:bg-[#3d5270] transition-colors z-40"
+      >
+        <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>
+          quiz
+        </span>
+      </button>
+
+      {/* Chat FAB */}
       <button
         onClick={() => setChatOpen(true)}
         aria-label="Ask Pellito about this recipe"
@@ -33,6 +53,13 @@ export default function RecipeActions({ recipeId }: { recipeId: string }) {
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
         recipeId={recipeId}
+      />
+
+      <QuizDrawer
+        isOpen={quizOpen}
+        onClose={() => setQuizOpen(false)}
+        recipeId={recipeId}
+        recipeTitle={recipeTitle}
       />
     </>
   );
