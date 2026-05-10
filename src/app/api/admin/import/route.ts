@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
-import { recipes, quizQuestions } from '@/db/schema';
-import { listRecipes } from '@/db/recipes';
+import { recipes } from '@/db/schema';
+import { insertQuestions } from '@/db/quiz';
 import { verifySession, COOKIE_NAME } from '@/lib/session';
 import { parseCsvText, parsePipeArray } from '@/lib/csv';
-import { buildDistractorPool, generateQuestionsForRecipe } from '@/lib/quiz-generator';
+import { generateQuestions } from '@/lib/quiz-generator';
 
 const REQUIRED_COLUMNS = ['title', 'recipe_type', 'ingredients', 'cook_steps', 'plate_steps'];
 const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -46,7 +46,14 @@ export async function POST(req: NextRequest) {
   }
 
   const summary: ImportSummary = { inserted: 0, updated: 0, failed: 0, errors: [] };
-  const newRecipeIds: string[] = [];
+  const newRecipes: Array<{
+    id: string;
+    title: string;
+    ingredients: string[];
+    plateware: string | null;
+    cook_steps: string[];
+    plate_steps: string[];
+  }> = [];
 
   for (let i = 0; i < rows.length; i++) {
     const rowNum = i + 2; // header is line 1
@@ -92,7 +99,16 @@ export async function POST(req: NextRequest) {
       } else {
         const [inserted] = await db.insert(recipes).values(record).returning({ id: recipes.id });
         summary.inserted++;
-        if (inserted?.id) newRecipeIds.push(inserted.id);
+        if (inserted?.id) {
+          newRecipes.push({
+            id: inserted.id,
+            title: record.title,
+            ingredients: record.ingredients,
+            plateware: record.plateware,
+            cook_steps: record.cook_steps,
+            plate_steps: record.plate_steps,
+          });
+        }
       }
     } catch (err) {
       summary.failed++;
@@ -102,21 +118,18 @@ export async function POST(req: NextRequest) {
   }
 
   // Generate quiz questions for newly inserted recipes only.
-  if (newRecipeIds.length > 0) {
-    const allRecipes = await listRecipes();
-    const pool = buildDistractorPool(allRecipes);
-    const newRecipes = allRecipes.filter(r => newRecipeIds.includes(r.id));
-
-    for (const recipe of newRecipes) {
-      try {
-        const questions = generateQuestionsForRecipe(recipe, pool);
-        if (questions.length > 0) {
-          await db.insert(quizQuestions).values(questions);
-        }
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        summary.errors.push(`quiz-gen for ${recipe.title}: ${msg}`);
-      }
+  for (const recipe of newRecipes) {
+    try {
+      const questions = generateQuestions({
+        ingredients: recipe.ingredients,
+        plateware: recipe.plateware,
+        cook_steps: recipe.cook_steps,
+        plate_steps: recipe.plate_steps,
+      });
+      await insertQuestions(recipe.id, questions);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      summary.errors.push(`quiz-gen for ${recipe.title}: ${msg}`);
     }
   }
 

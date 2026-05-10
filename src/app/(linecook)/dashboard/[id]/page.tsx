@@ -205,8 +205,8 @@ export default async function RecipeDetailPage({
         ))}
       </nav>
 
-      {/* Pellito Chat FAB + Drawer (client) */}
-      <RecipeActions recipeId={recipe.id} />
+      {/* FABs + Drawers (client) */}
+      <RecipeActions recipeId={recipe.id} recipeTitle={recipe.title} />
     </div>
   );
 }

@@ -1,153 +1,193 @@
-/**
- * Deterministic quiz-question generator — builds template questions from recipe
- * fields. Same recipe id always yields the same questions/order so re-running
- * import on a brand-new DB produces stable output.
- *
- * No LLM. Future versions can swap the body of `generateQuestionsForRecipe`
- * without changing callers.
- */
-import type { RecipeRow } from '@/db/recipes';
-import type { quizQuestions } from '@/db/schema';
+export interface GeneratedQuestion {
+  difficulty: 'easy' | 'hard';
+  question_text: string;
+  choices: string[];
+  correct_index: number;
+  source_field: string;
+}
 
-export type NewQuizQuestion = Omit<typeof quizQuestions.$inferInsert, 'id' | 'created_at'>;
+interface RecipeFields {
+  ingredients: string[];
+  plateware?: string | null;
+  cook_steps: string[];
+  plate_steps: string[];
+}
 
-const STATIONS = ['Saute', 'Grill', 'Fryer', 'Pantry', 'Pizza'];
-const PREP_DECOYS = ['5 min', '15 min', '30 min', '1 hour'];
+const PLATEWARE_POOL = [
+  'round dinner plate', 'oval ceramic plate', 'square plate', 'coupe bowl',
+  'pasta bowl', 'soup bowl', 'cast iron skillet', 'wooden board',
+  'wide-rim bowl', 'shallow bowl', 'ceramic ramekin', 'slate tile',
+  'long rectangular plate', 'wicker basket', 'parchment-lined tray',
+];
 
-/** Tiny seeded RNG (mulberry32) — stable across runs for a given seed. */
-function rngFromString(seed: string): () => number {
-  let h = 1779033703 ^ seed.length;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
+const FAKE_INGREDIENTS = [
+  'truffle oil', 'saffron threads', 'tahini', 'miso paste', 'harissa',
+  'anchovy paste', 'preserved lemon', 'sumac', "za'atar", 'pomegranate molasses',
+  'fish sauce', 'oyster sauce', 'galangal', 'lemongrass', 'coconut cream',
+  'tamarind paste', 'cardamom pods', 'fenugreek', 'dried hibiscus', 'mirin',
+  'ras el hanout', 'black sesame oil', 'nori flakes', 'bonito flakes', 'yuzu juice',
+];
+
+const FAKE_QUANTITIES = [
+  '1 oz', '2 oz', '3 oz', '4 oz', '6 oz', '8 oz', '1/2 cup', '1 cup',
+  '2 cups', '1 Tbsp', '2 Tbsp', '1/4 cup', '1 tsp', '2 tsp', '1 lb', '2 lb',
+  '1/2 lb', '1 each', '2 each', '3 each', '1/2 tsp', '3 Tbsp',
+];
+
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  let a = h >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  return a;
+}
+
+function pickN<T>(pool: T[], n: number, exclude: string[] = []): T[] {
+  const excLower = exclude.map(s => s.toLowerCase());
+  return shuffle(pool.filter(x => !excLower.includes(String(x).toLowerCase()))).slice(0, n);
+}
+
+function makeChoices(correct: string, distractors: string[]): { choices: string[]; correct_index: number } {
+  const all = shuffle([correct, ...distractors.slice(0, 3)]);
+  return { choices: all, correct_index: all.indexOf(correct) };
+}
+
+function trunc(s: string, max = 110): string {
+  return s.length > max ? s.slice(0, max).trimEnd() + '…' : s;
+}
+
+function parseIngredient(s: string): { qty: string; name: string } {
+  const m = s.match(/^([\d.\/]+(?:\s+(?:each|fl oz|oz|tsp|Tbsp|cup|lb|g|kg))?)\s+(.+)$/i);
+  return m ? { qty: m[1].trim(), name: m[2].trim() } : { qty: '', name: s };
+}
+
+function push(arr: GeneratedQuestion[], q: GeneratedQuestion | null) {
+  if (q) arr.push(q);
+}
+
+// ---------------------------------------------------------------------------
+// Easy generators
+// ---------------------------------------------------------------------------
+
+function qPlateware(recipe: RecipeFields): GeneratedQuestion | null {
+  if (!recipe.plateware) return null;
+  const correct = recipe.plateware;
+  const distractors = pickN(PLATEWARE_POOL, 3, [correct.toLowerCase()]);
+  if (distractors.length < 3) return null;
+  const { choices, correct_index } = makeChoices(correct, distractors);
+  return { difficulty: 'easy', question_text: 'What plateware is used for this dish?', choices, correct_index, source_field: 'plateware' };
+}
+
+function qIngredientIs(recipe: RecipeFields): GeneratedQuestion | null {
+  if (!recipe.ingredients.length) return null;
+  const parsed = recipe.ingredients.map(parseIngredient);
+  const { name } = parsed[0];
+  const recipeNames = parsed.map(p => p.name.toLowerCase());
+  const distractors = pickN(FAKE_INGREDIENTS, 3, recipeNames);
+  if (distractors.length < 3) return null;
+  const { choices, correct_index } = makeChoices(name, distractors);
+  return { difficulty: 'easy', question_text: 'Which of these is an ingredient in this dish?', choices, correct_index, source_field: 'ingredients' };
+}
+
+function qIngredientIsNot(recipe: RecipeFields): GeneratedQuestion | null {
+  if (recipe.ingredients.length < 3) return null;
+  const parsed = recipe.ingredients.map(parseIngredient);
+  const recipeNames = parsed.map(p => p.name);
+  const fakes = pickN(FAKE_INGREDIENTS, 1, recipeNames.map(n => n.toLowerCase()));
+  if (!fakes.length) return null;
+  const distractors = shuffle(recipeNames).slice(0, 3);
+  if (distractors.length < 3) return null;
+  const { choices, correct_index } = makeChoices(fakes[0], distractors);
+  return { difficulty: 'easy', question_text: 'Which of these is NOT an ingredient in this dish?', choices, correct_index, source_field: 'ingredients' };
+}
+
+function qCookStep(recipe: RecipeFields, idx: number): GeneratedQuestion | null {
+  const steps = recipe.cook_steps;
+  if (!steps.length) return null;
+  const allSteps = [...steps, ...recipe.plate_steps];
+  if (allSteps.length < 4) return null;
+  const step = steps[idx % steps.length];
+  const correct = trunc(step);
+  const pool = allSteps.filter(s => s !== step).map(s => trunc(s));
+  const distractors = pickN(pool, 3, [correct]);
+  if (distractors.length < 3) return null;
+  const { choices, correct_index } = makeChoices(correct, distractors);
+  return { difficulty: 'easy', question_text: `What happens in cook step ${(idx % steps.length) + 1}?`, choices, correct_index, source_field: 'cook_steps' };
+}
+
+function qPlateStep(recipe: RecipeFields, idx: number): GeneratedQuestion | null {
+  const steps = recipe.plate_steps;
+  if (!steps.length) return null;
+  const allSteps = [...recipe.cook_steps, ...steps];
+  if (allSteps.length < 4) return null;
+  const step = steps[idx % steps.length];
+  const correct = trunc(step);
+  const pool = allSteps.filter(s => s !== step).map(s => trunc(s));
+  const distractors = pickN(pool, 3, [correct]);
+  if (distractors.length < 3) return null;
+  const { choices, correct_index } = makeChoices(correct, distractors);
+  return { difficulty: 'easy', question_text: `What happens in plating step ${(idx % steps.length) + 1}?`, choices, correct_index, source_field: 'plate_steps' };
+}
+
+// ---------------------------------------------------------------------------
+// Hard generators
+// ---------------------------------------------------------------------------
+
+function qStepAfter(recipe: RecipeFields, idx: number): GeneratedQuestion | null {
+  const steps = recipe.cook_steps;
+  if (steps.length < 3) return null;
+  const i = idx % (steps.length - 1);
+  const correct = trunc(steps[i + 1]);
+  const pool = steps.filter((_, j) => j !== i && j !== i + 1).map(s => trunc(s));
+  const distractors = pickN(pool, 3, [correct]);
+  if (distractors.length < 3) return null;
+  const { choices, correct_index } = makeChoices(correct, distractors);
+  return {
+    difficulty: 'hard',
+    question_text: `In the cook process, what step comes AFTER:\n"${trunc(steps[i], 80)}"`,
+    choices, correct_index, source_field: 'cook_steps',
   };
 }
 
-function shuffle<T>(arr: T[], rand: () => number): T[] {
-  const out = arr.slice();
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
+function qIngredientQty(recipe: RecipeFields): GeneratedQuestion | null {
+  const withQty = recipe.ingredients.map(parseIngredient).filter(p => p.qty);
+  if (!withQty.length) return null;
+  const { qty, name } = withQty[0];
+  const distractors = pickN(FAKE_QUANTITIES, 3, [qty]);
+  if (distractors.length < 3) return null;
+  const { choices, correct_index } = makeChoices(qty, distractors);
+  return { difficulty: 'hard', question_text: `How much ${name} does this recipe use?`, choices, correct_index, source_field: 'ingredients' };
 }
 
-/** Pick `count` distinct items from `pool` excluding any in `exclude`. */
-function pickDistractors(
-  pool: string[],
-  exclude: Set<string>,
-  count: number,
-  rand: () => number,
-): string[] {
-  const candidates = Array.from(new Set(pool)).filter(p => p && !exclude.has(p));
-  const shuffled = shuffle(candidates, rand);
-  return shuffled.slice(0, count);
+function qStepCount(recipe: RecipeFields, field: 'cook_steps' | 'plate_steps'): GeneratedQuestion | null {
+  const steps = recipe[field];
+  if (!steps.length) return null;
+  const n = steps.length;
+  const opts = shuffle([n - 2, n - 1, n + 1, n + 2, n + 3].filter(x => x > 0 && x !== n)).slice(0, 3);
+  if (opts.length < 3) return null;
+  const { choices, correct_index } = makeChoices(String(n), opts.map(String));
+  const label = field === 'cook_steps' ? 'cook' : 'plating';
+  return { difficulty: 'hard', question_text: `How many ${label} steps does this recipe have?`, choices, correct_index, source_field: field };
 }
 
-function buildChoices(
-  correct: string,
-  distractors: string[],
-  rand: () => number,
-): { choices: string[]; correct_index: number } {
-  const choices = shuffle([correct, ...distractors], rand);
-  return { choices, correct_index: choices.indexOf(correct) };
-}
+// ---------------------------------------------------------------------------
+// Main export
+// ---------------------------------------------------------------------------
 
-export interface DistractorPool {
-  ingredients: string[];
-  cookSteps: string[];
-}
+export function generateQuestions(recipe: RecipeFields): GeneratedQuestion[] {
+  const qs: GeneratedQuestion[] = [];
 
-export function buildDistractorPool(allRecipes: RecipeRow[]): DistractorPool {
-  const ingredients: string[] = [];
-  const cookSteps: string[] = [];
-  for (const r of allRecipes) {
-    if (Array.isArray(r.ingredients)) ingredients.push(...r.ingredients);
-    if (Array.isArray(r.cook_steps)) cookSteps.push(...r.cook_steps);
-  }
-  return { ingredients, cookSteps };
-}
+  push(qs, qPlateware(recipe));
+  push(qs, qIngredientIs(recipe));
+  push(qs, qIngredientIsNot(recipe));
+  for (let i = 0; i < Math.min(recipe.cook_steps.length, 3); i++) push(qs, qCookStep(recipe, i));
+  for (let i = 0; i < Math.min(recipe.plate_steps.length, 2); i++) push(qs, qPlateStep(recipe, i));
 
-export function generateQuestionsForRecipe(
-  recipe: RecipeRow,
-  pool: DistractorPool,
-): NewQuizQuestion[] {
-  const rand = rngFromString(recipe.id);
-  const out: NewQuizQuestion[] = [];
+  for (let i = 0; i < Math.min(Math.max(recipe.cook_steps.length - 1, 0), 3); i++) push(qs, qStepAfter(recipe, i));
+  push(qs, qIngredientQty(recipe));
+  push(qs, qStepCount(recipe, 'cook_steps'));
+  push(qs, qStepCount(recipe, 'plate_steps'));
 
-  // Easy: station
-  if (recipe.station) {
-    const distractors = STATIONS.filter(s => s !== recipe.station).slice(0, 3);
-    const { choices, correct_index } = buildChoices(recipe.station, distractors, rand);
-    out.push({
-      recipe_id: recipe.id,
-      difficulty: 'easy',
-      question_text: `What station is ${recipe.title} cooked on?`,
-      choices,
-      correct_index,
-      source_field: 'station',
-    });
-  }
-
-  // Easy: prep_time
-  if (recipe.prep_time) {
-    const distractors = PREP_DECOYS.filter(d => d !== recipe.prep_time).slice(0, 3);
-    const { choices, correct_index } = buildChoices(recipe.prep_time, distractors, rand);
-    out.push({
-      recipe_id: recipe.id,
-      difficulty: 'easy',
-      question_text: `What is the prep time for ${recipe.title}?`,
-      choices,
-      correct_index,
-      source_field: 'prep_time',
-    });
-  }
-
-  // Hard: ingredient
-  const ingredients = recipe.ingredients ?? [];
-  if (ingredients.length > 0) {
-    const correct = ingredients[0];
-    const exclude = new Set(ingredients);
-    const distractors = pickDistractors(pool.ingredients, exclude, 3, rand);
-    if (distractors.length === 3) {
-      const { choices, correct_index } = buildChoices(correct, distractors, rand);
-      out.push({
-        recipe_id: recipe.id,
-        difficulty: 'hard',
-        question_text: `Which ingredient is in ${recipe.title}?`,
-        choices,
-        correct_index,
-        source_field: 'ingredients',
-      });
-    }
-  }
-
-  // Hard: first cook step
-  const cookSteps = recipe.cook_steps ?? [];
-  if (cookSteps.length > 0) {
-    const correct = cookSteps[0];
-    const exclude = new Set(cookSteps);
-    const distractors = pickDistractors(pool.cookSteps, exclude, 3, rand);
-    if (distractors.length === 3) {
-      const { choices, correct_index } = buildChoices(correct, distractors, rand);
-      out.push({
-        recipe_id: recipe.id,
-        difficulty: 'hard',
-        question_text: `Which is the first cook step for ${recipe.title}?`,
-        choices,
-        correct_index,
-        source_field: 'cook_steps',
-      });
-    }
-  }
-
-  return out;
+  return qs;
 }
