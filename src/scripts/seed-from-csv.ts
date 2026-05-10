@@ -9,6 +9,7 @@ import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import { recipes } from '../db/schema';
 import { eq } from 'drizzle-orm';
+import { parseCsvLine, parsePipeArray } from '../lib/csv';
 
 // ---------------------------------------------------------------------------
 // DB setup (mirrors src/db/index.ts but standalone — no Next.js context)
@@ -19,41 +20,6 @@ const client = createClient({
   url: `file:${path.join(process.cwd(), 'data/dev.db')}`,
 });
 const db = drizzle(client);
-
-// ---------------------------------------------------------------------------
-// CSV parser — handles quoted fields and pipe-delimited array columns
-// ---------------------------------------------------------------------------
-const ARRAY_COLUMNS = new Set(['ingredients', 'cook_steps', 'plate_steps', 'allergens']);
-
-function parseCsvLine(line: string): string[] {
-  const fields: string[] = [];
-  let current = '';
-  let inQuotes = false;
-
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (ch === ',' && !inQuotes) {
-      fields.push(current);
-      current = '';
-    } else {
-      current += ch;
-    }
-  }
-  fields.push(current);
-  return fields;
-}
-
-function parsePipeArray(raw: string): string[] {
-  if (!raw.trim()) return [];
-  return raw.split('|').map(s => s.trim()).filter(Boolean);
-}
 
 // ---------------------------------------------------------------------------
 // Main
