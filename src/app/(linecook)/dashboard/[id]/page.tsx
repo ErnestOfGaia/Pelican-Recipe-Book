@@ -4,6 +4,8 @@ import Link from 'next/link';
 import RecipeActions from './RecipeActions';
 import QuizCTA from './QuizCTA';
 import { BottomNav } from '@/components/BottomNav';
+import { db } from '@/db/index';
+import { recipeViews } from '@/db/schema';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +18,8 @@ export default async function RecipeDetailPage({
   const recipe = await getRecipe(id);
 
   if (!recipe) notFound();
+
+  db.insert(recipeViews).values({ recipe_id: id }).catch(() => {});
 
   return (
     <div className="min-h-screen bg-[#f9f9ff]">

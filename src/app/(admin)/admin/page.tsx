@@ -34,6 +34,22 @@ export default function AdminHome() {
           </div>
           <span className="material-symbols-outlined text-[#74777f] ml-auto">arrow_forward</span>
         </Link>
+
+        <Link
+          href="/admin/analytics"
+          className="flex items-center gap-4 border-2 border-[#001b3c] bg-white px-6 py-5 hover:bg-[#f0f3ff] transition-colors mt-4"
+        >
+          <span className="material-symbols-outlined text-[#526a8d] text-4xl">bar_chart</span>
+          <div>
+            <p className="font-grotesk font-bold uppercase text-[#001b3c] text-lg tracking-tight">
+              ANALYTICS
+            </p>
+            <p className="font-sans text-[#43474e] text-sm mt-0.5">
+              Quiz performance, session activity, and engagement
+            </p>
+          </div>
+          <span className="material-symbols-outlined text-[#74777f] ml-auto">arrow_forward</span>
+        </Link>
       </main>
     </div>
   );

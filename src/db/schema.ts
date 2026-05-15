@@ -51,3 +51,9 @@ export const roleSessions = sqliteTable('role_sessions', {
   started_at: integer('started_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
   ended_at: integer('ended_at', { mode: 'timestamp' }),
 });
+
+export const recipeViews = sqliteTable('recipe_views', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  recipe_id: text('recipe_id').notNull().references(() => recipes.id),
+  viewed_at: integer('viewed_at', { mode: 'timestamp' }).$defaultFn(() => new Date()),
+});
