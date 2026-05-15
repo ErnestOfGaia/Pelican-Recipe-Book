@@ -39,6 +39,38 @@ Schema lives in `src/db/schema.ts`. DB helpers are in `src/db/recipes.ts`.
 
 ---
 
+## Pellito agent — RAG knowledge base
+
+Pellito (the AI deckhand) answers cook questions grounded in recipe data. Retrieval is backed by a local vector store at `data/brain.json`, built from Voyage AI `voyage-3-lite` embeddings.
+
+### Building the brain
+
+```bash
+# Local — requires VOYAGE_API_KEY in .env
+npm run ingest
+
+# VPS
+cd /docker/pellito-hub
+VOYAGE_API_KEY=<key> docker compose exec app npm run ingest
+```
+
+The script is re-runnable: it skips chunks whose `content_hash` matches the existing brain entry. Run it after seeding new recipes, after a Manager edits any recipe content, or after Spanish translations are added.
+
+### Cost & runtime
+
+- **Model:** `voyage-3-lite` at $0.02 per 1M tokens
+- **Per recipe:** ~400–600 tokens fully serialised → ~$0.00001 per recipe per language
+- **Full menu (~52 recipes × 2 languages):** ~50K tokens ≈ **$0.001 per full rebuild**
+- **Runtime:** ~5–10 seconds for a full rebuild (one Voyage round-trip per 64 chunks); a few hundred ms for an incremental run with no changes
+
+### Retrieval at query time
+
+Each user question costs one extra Voyage call (~1 token, sub-cent fraction) plus an in-memory cosine search across the chunks. There is no separate vector DB to operate.
+
+If `brain.json` is missing or empty, the chat route falls back to injecting the full corpus the legacy way so chat keeps working until ingest is run.
+
+---
+
 ## Development
 
 ```bash

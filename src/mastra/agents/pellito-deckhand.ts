@@ -4,6 +4,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
 import { listRecipes, getRecipe } from '@/db/recipes';
 import type { RecipeRow } from '@/db/recipes';
+import { searchBrain, loadBrain } from '@/lib/brain';
 
 const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -59,7 +60,7 @@ export function isRecipeQuery(message: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Context formatter — serialises recipes into a compact plain-text block
+// Context formatter — used when no brain is built yet (fallback) or for a known recipe
 // ---------------------------------------------------------------------------
 export function formatRecipesContext(recipes: RecipeRow[]): string {
   return recipes
@@ -87,18 +88,58 @@ export function formatRecipesContext(recipes: RecipeRow[]): string {
     .join('\n---\n');
 }
 
+export function isBrainReady(): boolean {
+  return loadBrain().chunks.length > 0;
+}
+
 // ---------------------------------------------------------------------------
-// Tool — lets the agent look up recipes from the DB on demand
+// Tools
 // ---------------------------------------------------------------------------
+const searchKnowledgeTool = createTool({
+  id: 'searchKnowledge',
+  description:
+    'Semantic search over the Pelican Brewery recipe knowledge base. ' +
+    'Use this first for any recipe question — pass the user\'s natural-language query ' +
+    'and you\'ll get the most relevant recipe chunks back. Returns recipe content as text.',
+  inputSchema: z.object({
+    query: z.string().describe('The natural-language question to search for'),
+    lang: z.enum(['en', 'es']).optional().describe('Preferred response language for ranking'),
+    topK: z.number().int().min(1).max(8).optional().describe('How many chunks to return (default 4)'),
+  }),
+  execute: async ({ query, lang, topK = 4 }: { query: string; lang?: 'en' | 'es'; topK?: number }) => {
+    try {
+      const hits = await searchBrain(query, { topK, lang });
+      if (hits.length === 0) {
+        return {
+          chunks: [],
+          note: 'Brain is empty. Run `npm run ingest` to build it.',
+        };
+      }
+      return {
+        chunks: hits.map((h) => ({
+          recipe_title: h.recipe_title,
+          lang: h.lang,
+          score: Number(h.score.toFixed(4)),
+          content: h.content,
+        })),
+      };
+    } catch (err) {
+      return {
+        chunks: [],
+        error: err instanceof Error ? err.message : 'Unknown error during retrieval',
+      };
+    }
+  },
+});
+
 const getRecipeTool = createTool({
   id: 'getRecipe',
   description:
-    'Fetch a specific recipe by ID, or list all published recipes from the database.',
+    'Fetch one recipe by its UUID, or list every published recipe. Use this when you already ' +
+    'know the recipe ID (e.g. when the chat is anchored to a specific recipe page) or when you ' +
+    'need the full menu rather than a semantic search.',
   inputSchema: z.object({
-    recipeId: z
-      .string()
-      .optional()
-      .describe('Recipe UUID — omit to list all published recipes'),
+    recipeId: z.string().optional().describe('Recipe UUID — omit to list all published recipes'),
   }),
   execute: async ({ recipeId }: { recipeId?: string }) => {
     if (recipeId) {
@@ -118,12 +159,18 @@ export const pellitoDeckhhandAgent = new Agent({
   name: 'Pellito Deckhand',
   instructions: `You are Pellito the Deckhand, a knowledgeable galley hand at Pelican Brewery in Pacific City, Oregon.
 You help line cooks find and execute recipes quickly and confidently.
-Your answers are grounded ONLY in the recipe data provided in the conversation context.
-If asked about something not covered by the provided recipe data, say plainly: "I don't have that in my recipe book."
+
+For ANY recipe question, ALWAYS call the searchKnowledge tool first with the user's question.
+Use the chunks it returns as your grounded source of truth. Do not answer recipe questions from prior knowledge — answer only from the retrieved chunks.
+
+If searchKnowledge returns no relevant chunks, say plainly: "I don't have that in my recipe book."
 Do not make up ingredients, steps, timings, or other facts.
+
+When the chat is already anchored to a specific recipe (you'll see a system note with the recipe ID), prefer getRecipe with that ID over search.
+
 Keep answers practical and concise — line cooks are busy.
 Do not discuss topics unrelated to the recipes (legal, personal, medical, staffing, etc.).
-IMPORTANT: If the user's message is written in Spanish or contains primarily Spanish words, respond entirely in Spanish. Match the language the cook is using.`,
+IMPORTANT: If the user's message is written in Spanish or contains primarily Spanish words, respond entirely in Spanish, and pass lang: 'es' to searchKnowledge to bias toward Spanish chunks.`,
   model: anthropic('claude-haiku-4-5-20251001'),
-  tools: { getRecipeTool },
+  tools: { searchKnowledgeTool, getRecipeTool },
 });

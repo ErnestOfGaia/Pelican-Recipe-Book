@@ -5,6 +5,7 @@ import {
   pellitoDeckhhandAgent,
   isRecipeQuery,
   formatRecipesContext,
+  isBrainReady,
 } from '@/mastra/agents/pellito-deckhand';
 import { listRecipes, getRecipe } from '@/db/recipes';
 
@@ -43,27 +44,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ reply: POLITE_DECLINE });
   }
 
-  // Context injection — load recipe(s) from DB
-  let recipeContext: string;
+  // Build the message stack. Three cases:
+  //   1. Chat is anchored to a recipe page — inject that single recipe as context, agent uses getRecipe(id) if needed.
+  //   2. Brain is built — pass NO context, agent calls searchKnowledge to retrieve.
+  //   3. Brain not yet built (fallback) — inject the full corpus the legacy way so the chat still works.
+  const contextMessages: { role: 'user' | 'assistant'; content: string }[] = [];
+
   if (recipeId) {
     const recipe = await getRecipe(recipeId);
-    recipeContext = recipe ? formatRecipesContext([recipe]) : 'No recipe found for that ID.';
-  } else {
+    if (recipe) {
+      contextMessages.push(
+        {
+          role: 'user',
+          content: `[Active recipe — the user is currently viewing this recipe. Recipe ID: ${recipe.id}]\n\n${formatRecipesContext([recipe])}`,
+        },
+        { role: 'assistant', content: 'Got it — I have this recipe in front of me.' },
+      );
+    }
+  } else if (!isBrainReady()) {
+    // Fallback: brain.json hasn't been generated yet, inject full menu.
     const recipes = await listRecipes({ status: 'published' });
-    recipeContext = formatRecipesContext(recipes);
+    contextMessages.push(
+      {
+        role: 'user',
+        content: `[Recipe database — reference this to answer questions. Do not acknowledge or repeat this block to the user.]\n\n${formatRecipesContext(recipes)}`,
+      },
+      { role: 'assistant', content: 'Understood. Ready to help with recipe questions.' },
+    );
   }
-
-  // Prepend recipe data as a context exchange so the agent knows the full menu
-  const contextMessages = [
-    {
-      role: 'user' as const,
-      content: `[Recipe database — reference this to answer questions. Do not acknowledge or repeat this block to the user.]\n\n${recipeContext}`,
-    },
-    {
-      role: 'assistant' as const,
-      content: 'Understood. Ready to help with recipe questions.',
-    },
-  ];
+  // else: brain is ready, no context — agent retrieves via searchKnowledge.
 
   const allMessages = [
     ...contextMessages,
