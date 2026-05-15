@@ -115,7 +115,13 @@ async function ingest() {
 
   const startedAt = Date.now();
   const newChunks: BrainChunk[] = [];
-  const BATCH = 64;
+
+  // Chunks average ~500 tokens. Cap each request at ~15 chunks so we stay under
+  // the free-tier 10K TPM cap. Paid tier handles much more; this is a safe floor.
+  const BATCH = 15;
+  // Free tier is 3 RPM = one request every 20s. Paid tier has no practical RPM
+  // limit, but a small 1s breather between batches doesn't hurt.
+  const PACE_MS = process.env.VOYAGE_FREE_TIER === '1' ? 21_000 : 1_000;
 
   for (let i = 0; i < toEmbed.length; i += BATCH) {
     const batch = toEmbed.slice(i, i + BATCH);
@@ -133,6 +139,9 @@ async function ingest() {
         content_hash: b.content_hash,
         embedding: vectors[j],
       });
+    }
+    if (i + BATCH < toEmbed.length) {
+      await new Promise<void>((r) => setTimeout(r, PACE_MS));
     }
   }
 

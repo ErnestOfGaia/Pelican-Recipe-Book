@@ -52,6 +52,11 @@ npm run ingest
 # VPS — VOYAGE_API_KEY must be set in /docker/pellito-hub/.env
 cd /docker/pellito-hub
 docker compose exec pellito-hub npx tsx src/scripts/ingest.ts
+
+# If your Voyage account has no payment method (3 RPM / 10K TPM free-tier limit),
+# add VOYAGE_FREE_TIER=1 so the script paces itself between batches.
+# A full menu ingest will take ~15-20 minutes instead of seconds.
+docker compose exec -e VOYAGE_FREE_TIER=1 pellito-hub npx tsx src/scripts/ingest.ts
 ```
 
 The script is re-runnable: it skips chunks whose `content_hash` matches the existing brain entry. Run it after seeding new recipes, after a Manager edits any recipe content, or after Spanish translations are added.

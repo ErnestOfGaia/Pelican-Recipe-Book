@@ -44,7 +44,13 @@ export function clearBrainCache() {
   cached = null;
 }
 
-async function callVoyage(input: string[], inputType: 'query' | 'document'): Promise<number[][]> {
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+async function callVoyage(
+  input: string[],
+  inputType: 'query' | 'document',
+  attempt = 1,
+): Promise<number[][]> {
   const key = process.env.VOYAGE_API_KEY;
   if (!key) throw new Error('VOYAGE_API_KEY is not set');
   const res = await fetch(VOYAGE_EMBED_URL, {
@@ -55,6 +61,15 @@ async function callVoyage(input: string[], inputType: 'query' | 'document'): Pro
     },
     body: JSON.stringify({ input, model: VOYAGE_MODEL, input_type: inputType }),
   });
+
+  // Retry on rate-limit with exponential backoff (free tier is 3 RPM / 10K TPM).
+  if (res.status === 429 && attempt <= 5) {
+    const wait = Math.min(60_000, 20_000 * attempt);
+    console.warn(`  ⏳ Voyage 429 — waiting ${wait / 1000}s before retry ${attempt}/5…`);
+    await sleep(wait);
+    return callVoyage(input, inputType, attempt + 1);
+  }
+
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`Voyage API ${res.status}: ${body}`);
