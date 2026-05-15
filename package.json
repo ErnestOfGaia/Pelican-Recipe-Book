@@ -12,7 +12,7 @@
     "seed": "tsx src/scripts/seed-from-csv.ts",
     "seed:questions": "tsx src/scripts/seed-questions.ts",
     "seed:all": "npm run seed && npm run seed:questions",
-    "ingest": "tsx src/scripts/ingest.ts"
+    "ingest": "tsx --env-file-if-exists=.env src/scripts/ingest.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.0",
