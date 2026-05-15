@@ -13,7 +13,7 @@ const anthropic = createAnthropic({
 // Keyword classifier — routes obviously off-topic messages without LLM call
 // ---------------------------------------------------------------------------
 const RECIPE_PATTERNS = [
-  // Direct food/recipe keywords — sufficient on their own
+  // English food/recipe keywords
   /\bingredients?\b/i,
   /\brecipe\b/i,
   /\bstep(s)?\b/i,
@@ -28,7 +28,7 @@ const RECIPE_PATTERNS = [
   /\bsauce\b|\bdressing\b|\bmarinades?\b/i,
   /\bplateware\b/i,
   /\boz\b|\bounce(s)?\b|\bportion(s)?\b/i,
-  // Compound — require food context word in the same query
+  // English compound patterns
   /how (do|to|can|should) (i|we|you) (make|cook|prep|plate|garnish|serve)/i,
   /what (is|are) (the )?(ingredients?|allergens?|steps?|yield|plateware|cook|plate)/i,
   /what goes (in|into)/i,
@@ -37,6 +37,21 @@ const RECIPE_PATTERNS = [
   /\bpare?|pare?\b/i,
   /\bstation\b/i,
   /\b(saute|grill|fryer|pantry|pizza)\b/i,
+  // Spanish food/recipe keywords
+  /\bingredientes?\b/i,
+  /\breceta\b/i,
+  /\bpasos?\b/i,
+  /\bcocinar?\b|\bcocción\b|\bcoc(ido|ina)\b/i,
+  /\bpreparar?\b|\bpreparación\b/i,
+  /\bemplatad[oa]\b|\bemplatar?\b/i,
+  /\bservir\b|\bservicio\b/i,
+  /\balérgenos?\b|\baler(gia|génico)\b/i,
+  /\bvida útil\b/i,
+  /\bvajilla\b/i,
+  /\bporcione?s?\b/i,
+  /\bsalsa\b|\baderez[oa]\b/i,
+  /cuánto(s)?\b|\bcómo\b|\bqué (es|son|lleva|tiene)\b/i,
+  /\bdime\b|\bcuéntame\b/i,
 ];
 
 export function isRecipeQuery(message: string): boolean {
@@ -107,7 +122,8 @@ Your answers are grounded ONLY in the recipe data provided in the conversation c
 If asked about something not covered by the provided recipe data, say plainly: "I don't have that in my recipe book."
 Do not make up ingredients, steps, timings, or other facts.
 Keep answers practical and concise — line cooks are busy.
-Do not discuss topics unrelated to the recipes (legal, personal, medical, staffing, etc.).`,
+Do not discuss topics unrelated to the recipes (legal, personal, medical, staffing, etc.).
+IMPORTANT: If the user's message is written in Spanish or contains primarily Spanish words, respond entirely in Spanish. Match the language the cook is using.`,
   model: anthropic('claude-haiku-4-5-20251001'),
   tools: { getRecipeTool },
 });

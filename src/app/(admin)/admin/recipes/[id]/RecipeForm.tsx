@@ -51,6 +51,12 @@ export default function RecipeForm({ recipe, questions }: RecipeFormProps) {
   const [plateStepsRaw, setPlateStepsRaw] = useState((recipe?.plate_steps ?? []).join('\n'));
   const [allergensRaw, setAllergensRaw] = useState((recipe?.allergens ?? []).join(' | '));
 
+  const [titleEs, setTitleEs] = useState(recipe?.title_es ?? '');
+  const [platewareEs, setPlatewareEs] = useState(recipe?.plateware_es ?? '');
+  const [ingredientsEsRaw, setIngredientsEsRaw] = useState((recipe?.ingredients_es ?? []).join('\n'));
+  const [cookStepsEsRaw, setCookStepsEsRaw] = useState((recipe?.cook_steps_es ?? []).join('\n'));
+  const [plateStepsEsRaw, setPlateStepsEsRaw] = useState((recipe?.plate_steps_es ?? []).join('\n'));
+
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; message: string } | null>(null);
 
@@ -87,6 +93,11 @@ export default function RecipeForm({ recipe, questions }: RecipeFormProps) {
       cook_steps: splitLines(cookStepsRaw),
       plate_steps: splitLines(plateStepsRaw),
       allergens: splitPipes(allergensRaw),
+      title_es: titleEs.trim() || null,
+      plateware_es: platewareEs.trim() || null,
+      ingredients_es: splitLines(ingredientsEsRaw).length ? splitLines(ingredientsEsRaw) : null,
+      cook_steps_es: splitLines(cookStepsEsRaw).length ? splitLines(cookStepsEsRaw) : null,
+      plate_steps_es: splitLines(plateStepsEsRaw).length ? splitLines(plateStepsEsRaw) : null,
     };
 
     const url = isNew ? '/api/admin/recipes' : `/api/admin/recipes/${recipe!.id}`;
@@ -338,6 +349,66 @@ export default function RecipeForm({ recipe, questions }: RecipeFormProps) {
             className={inputClass + ' resize-y'}
             placeholder="Flavour description shown to guests…"
           />
+        </div>
+
+        {/* Spanish Translations */}
+        <div className={sectionClass}>
+          <p className={sectionHeadingClass}>SPANISH TRANSLATIONS (ES)</p>
+          <p className="font-sans text-[#74777f] text-xs mb-4">
+            Leave blank to fall back to English. All fields optional.
+          </p>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <label className={labelClass}>Title (ES)</label>
+              <input
+                type="text"
+                value={titleEs}
+                onChange={e => setTitleEs(e.target.value)}
+                className={inputClass}
+                placeholder="Título en español"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Plateware (ES)</label>
+              <input
+                type="text"
+                value={platewareEs}
+                onChange={e => setPlatewareEs(e.target.value)}
+                className={inputClass}
+                placeholder="Vajilla"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Ingredients (ES) — one per line</label>
+              <textarea
+                value={ingredientsEsRaw}
+                onChange={e => setIngredientsEsRaw(e.target.value)}
+                rows={6}
+                className={inputClass + ' resize-y'}
+                placeholder={'6 oz filete de salmón\n2 cucharadas de aceite de oliva'}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Cook Steps (ES) — one per line</label>
+              <textarea
+                value={cookStepsEsRaw}
+                onChange={e => setCookStepsEsRaw(e.target.value)}
+                rows={6}
+                className={inputClass + ' resize-y'}
+                placeholder={'Sazonar el salmón con sal y pimienta\nCalentar el aceite a fuego medio-alto'}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Plate Steps (ES) — one per line</label>
+              <textarea
+                value={plateStepsEsRaw}
+                onChange={e => setPlateStepsEsRaw(e.target.value)}
+                rows={4}
+                className={inputClass + ' resize-y'}
+                placeholder={'Colocar el salmón a las 6 en punto'}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Feedback banner */}

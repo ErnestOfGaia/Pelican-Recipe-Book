@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { LanguageProvider } from '@/lib/LanguageContext';
 
 export const metadata: Metadata = {
   title: 'Pellito Hub',
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="bg-surface text-on-surface font-sans">{children}</body>
+      <body className="bg-surface text-on-surface font-sans"><LanguageProvider>{children}</LanguageProvider></body>
     </html>
   );
 }

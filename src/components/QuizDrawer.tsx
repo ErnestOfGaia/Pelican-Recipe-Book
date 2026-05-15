@@ -1,13 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLanguage } from '@/lib/LanguageContext';
 
 interface QuizQuestion {
   id: string;
   recipe_id: string;
   difficulty: 'easy' | 'hard';
   question_text: string;
+  question_text_es?: string | null;
   choices: string[];
+  choices_es?: string[] | null;
   correct_index: number;
 }
 
@@ -36,6 +39,7 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
   const [hardScore, setHardScore] = useState(0);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const { lang, t } = useLanguage();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && isOpen) onClose(); };
@@ -43,7 +47,6 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  // Reset state when drawer closes
   useEffect(() => {
     if (!isOpen) {
       setPhase('idle');
@@ -85,11 +88,15 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
     if (phase === 'easy' && isCorrect) setEasyScore(s => s + 1);
     if (phase === 'hard' && isCorrect) setHardScore(s => s + 1);
 
-    // Fire-and-forget metric recording
     fetch('/api/quiz/answer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recipe_id: recipeId, question_id: q.id, correct: isCorrect }),
+      body: JSON.stringify({
+        recipe_id: recipeId,
+        question_id: q.id,
+        correct: isCorrect,
+        language: lang === 'es' ? 'Spanish' : 'English',
+      }),
     }).catch(() => {});
   }
 
@@ -118,6 +125,13 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
   const currentQ = activeQs[currentIdx];
   const easyTotal = Math.min(easyQs.length, 5);
   const hardTotal = Math.min(hardQs.length, 3);
+
+  function getQuestionText(q: QuizQuestion) {
+    return (lang === 'es' && q.question_text_es) ? q.question_text_es : q.question_text;
+  }
+  function getChoices(q: QuizQuestion) {
+    return (lang === 'es' && q.choices_es?.length) ? q.choices_es : q.choices;
+  }
 
   return (
     <>
@@ -161,9 +175,9 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
             <div className="flex flex-col items-center gap-6 mt-6 text-center">
               <span className="material-symbols-outlined text-7xl text-[#526a8d]" style={{ fontVariationSettings: "'FILL' 1" }}>quiz</span>
               <div>
-                <p className="font-grotesk font-black uppercase text-[#001b3c] text-xl tracking-tight">Test yourself</p>
+                <p className="font-grotesk font-black uppercase text-[#001b3c] text-xl tracking-tight">{t('quizEasyTitle')}</p>
                 <p className="font-sans text-[#74777f] text-sm mt-2 max-w-xs">
-                  5 multiple-choice questions on this recipe. Easy questions test recall — ingredients, steps, plateware.
+                  {t('quizDescription')}
                 </p>
               </div>
               {error && <p className="text-red-600 text-sm font-sans">{error}</p>}
@@ -171,7 +185,7 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
                 onClick={startQuiz}
                 className="bg-[#001b3c] text-white font-grotesk font-bold uppercase tracking-wide px-10 py-3 hover:bg-[#526a8d] transition-colors"
               >
-                Start Quiz
+                {t('quizStart')}
               </button>
             </div>
           )}
@@ -179,7 +193,7 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
           {/* LOADING */}
           {phase === 'loading' && (
             <div className="flex items-center justify-center h-40">
-              <p className="font-grotesk text-[#526a8d] animate-pulse tracking-wide">Loading questions…</p>
+              <p className="font-grotesk text-[#526a8d] animate-pulse tracking-wide">{t('quizLoading')}</p>
             </div>
           )}
 
@@ -189,7 +203,7 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
               {/* Progress bar */}
               <div className="flex items-center justify-between mb-1">
                 <span className="font-grotesk font-bold uppercase text-xs text-[#526a8d] tracking-widest">
-                  {phase === 'easy' ? 'Easy' : 'Hard'} · {currentIdx + 1}/{totalQs}
+                  {phase === 'easy' ? t('quizEasyTitle') : t('quizHardTitle')} · {currentIdx + 1}/{totalQs}
                 </span>
                 <div className="flex gap-1">
                   {Array.from({ length: totalQs }).map((_, i) => (
@@ -205,12 +219,12 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
 
               {/* Question */}
               <div className="bg-[#001b3c] text-white px-5 py-4 border-l-4 border-[#526a8d]">
-                <p className="font-sans text-base leading-relaxed whitespace-pre-wrap">{currentQ.question_text}</p>
+                <p className="font-sans text-base leading-relaxed whitespace-pre-wrap">{getQuestionText(currentQ)}</p>
               </div>
 
               {/* Choices */}
               <div className="flex flex-col gap-2">
-                {currentQ.choices.map((choice, i) => {
+                {getChoices(currentQ).map((choice, i) => {
                   const isCorrect = i === currentQ.correct_index;
                   const isSelected = feedback?.selected === i;
                   let cls =
@@ -246,8 +260,8 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
                     </span>
                     <span className="font-grotesk font-bold text-sm uppercase tracking-wide">
                       {feedback.isCorrect
-                        ? 'Correct!'
-                        : `Incorrect — answer: ${currentQ.choices[currentQ.correct_index]}`}
+                        ? t('quizCorrect')
+                        : `${t('quizIncorrect')} — ${getChoices(currentQ)[currentQ.correct_index]}`}
                     </span>
                   </div>
                   <div className="flex justify-end">
@@ -255,7 +269,7 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
                       onClick={advance}
                       className="bg-[#526a8d] text-white font-grotesk font-bold uppercase tracking-wide px-6 py-2.5 text-sm hover:bg-[#3d5270] transition-colors"
                     >
-                      {currentIdx + 1 < totalQs ? 'Next →' : 'Results →'}
+                      {currentIdx + 1 < totalQs ? `${t('quizNextQuestion')} →` : `${t('quizScore')} →`}
                     </button>
                   </div>
                 </div>
@@ -270,32 +284,27 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
                 {easyScore === easyTotal ? 'emoji_events' : easyScore >= Math.ceil(easyTotal / 2) ? 'thumb_up' : 'sentiment_neutral'}
               </span>
               <div>
+                <p className="font-grotesk font-bold uppercase text-[#526a8d] text-xs tracking-widest mb-1">{t('quizResultEasy')}</p>
                 <p className="font-grotesk font-black uppercase text-[#001b3c] text-3xl tracking-tight">
                   {easyScore} / {easyTotal}
-                </p>
-                <p className="font-sans text-[#74777f] text-sm mt-1">
-                  {easyScore === easyTotal
-                    ? 'Perfect! You know this recipe cold.'
-                    : easyScore >= Math.ceil(easyTotal / 2)
-                    ? 'Good work — keep it up!'
-                    : 'Keep studying this one!'}
                 </p>
               </div>
 
               {hardQs.length > 0 && (
                 <div className="w-full flex flex-col gap-3 mt-2">
-                  <p className="font-grotesk font-bold uppercase text-xs text-[#526a8d] tracking-widest">Want a challenge?</p>
+                  <p className="font-grotesk font-bold uppercase text-xs text-[#526a8d] tracking-widest">{t('quizHardPrompt')}</p>
+                  <p className="font-sans text-[#74777f] text-sm">{t('quizHardSubtext')}</p>
                   <button
                     onClick={startHard}
                     className="w-full bg-[#001b3c] text-white font-grotesk font-bold uppercase tracking-wide px-6 py-3 hover:bg-[#526a8d] transition-colors"
                   >
-                    Try 3 Harder Questions →
+                    {t('quizStartHard')}
                   </button>
                 </div>
               )}
 
               <button onClick={onClose} className="text-[#526a8d] font-grotesk font-bold uppercase text-xs tracking-widest underline mt-1">
-                Done
+                {t('quizSkipHard')}
               </button>
             </div>
           )}
@@ -307,14 +316,14 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
                 {hardScore === hardTotal ? 'emoji_events' : hardScore >= 2 ? 'thumb_up' : 'sentiment_neutral'}
               </span>
               <div>
+                <p className="font-grotesk font-bold uppercase text-[#526a8d] text-xs tracking-widest mb-1">{t('quizResultHard')}</p>
                 <p className="font-grotesk font-black uppercase text-[#001b3c] text-3xl tracking-tight">
                   {hardScore} / {hardTotal}
                 </p>
-                <p className="font-sans text-[#74777f] text-sm mt-1">Hard questions done!</p>
               </div>
 
               <div className="bg-white border-2 border-[#001b3c] px-6 py-4 w-full">
-                <p className="font-grotesk font-bold uppercase text-xs text-[#74777f] tracking-widest mb-1">Total score</p>
+                <p className="font-grotesk font-bold uppercase text-xs text-[#74777f] tracking-widest mb-1">{t('quizScore')}</p>
                 <p className="font-grotesk font-black text-[#001b3c] text-2xl">
                   {easyScore + hardScore} / {easyTotal + hardTotal}
                 </p>
@@ -324,7 +333,7 @@ export function QuizDrawer({ isOpen, onClose, recipeId, recipeTitle }: QuizDrawe
                 onClick={onClose}
                 className="bg-[#001b3c] text-white font-grotesk font-bold uppercase tracking-wide px-10 py-3 hover:bg-[#526a8d] transition-colors"
               >
-                Done
+                {t('quizFinish')}
               </button>
             </div>
           )}

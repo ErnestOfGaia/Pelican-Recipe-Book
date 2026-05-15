@@ -5,23 +5,34 @@ import Link from 'next/link';
 import type { RecipeRow } from '@/db/recipes';
 import { ChatDrawer } from '@/components/ChatDrawer';
 import { BottomNav } from '@/components/BottomNav';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { useLanguage } from '@/lib/LanguageContext';
 
 type FilterType = 'ALL' | 'Saute' | 'Grill' | 'Fryer' | 'Pantry' | 'Pizza';
 
-const STATIONS: FilterType[] = ['ALL', 'Saute', 'Grill', 'Fryer', 'Pantry', 'Pizza'];
+const STATIONS: { value: FilterType; labelKey: 'filterAll' | 'filterSaute' | 'filterGrill' | 'filterFryer' | 'filterPantry' | 'filterPizza' }[] = [
+  { value: 'ALL', labelKey: 'filterAll' },
+  { value: 'Saute', labelKey: 'filterSaute' },
+  { value: 'Grill', labelKey: 'filterGrill' },
+  { value: 'Fryer', labelKey: 'filterFryer' },
+  { value: 'Pantry', labelKey: 'filterPantry' },
+  { value: 'Pizza', labelKey: 'filterPizza' },
+];
 
 export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeRow[] }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterType>('ALL');
   const [chatOpen, setChatOpen] = useState(false);
+  const { t, lang } = useLanguage();
 
   const filtered = useMemo(() => {
     return initialRecipes.filter(r => {
-      const matchesSearch = r.title.toLowerCase().includes(search.toLowerCase());
+      const searchTarget = (lang === 'es' && r.title_es) ? r.title_es : r.title;
+      const matchesSearch = searchTarget.toLowerCase().includes(search.toLowerCase());
       const matchesFilter = filter === 'ALL' || r.station === filter;
       return matchesSearch && matchesFilter;
     });
-  }, [initialRecipes, search, filter]);
+  }, [initialRecipes, search, filter, lang]);
 
   return (
     <div className="min-h-screen bg-[#f9f9ff]">
@@ -33,7 +44,7 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
             PELLITO HUB
           </span>
         </div>
-        <span className="font-grotesk font-bold uppercase text-[#526a8d] text-sm">EN | ES</span>
+        <LanguageToggle />
       </header>
 
       {/* Main content */}
@@ -54,7 +65,7 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
             </span>
             <input
               type="text"
-              placeholder="SEARCH RECIPES"
+              placeholder={t('searchPlaceholder').toUpperCase()}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="h-[64px] w-full bg-white border-b-2 border-[#001b3c] pl-12 pr-4 font-grotesk uppercase tracking-widest text-[#001b3c] placeholder:text-[#74777f]/50 focus:border-2 focus:border-[#526a8d] outline-none text-base"
@@ -64,21 +75,21 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
 
         {/* Filter chips */}
         <div className="flex items-center gap-2 mb-6 flex-wrap">
-          {STATIONS.map(f => (
+          {STATIONS.map(s => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
+              key={s.value}
+              onClick={() => setFilter(s.value)}
               className={`px-6 py-3 font-grotesk font-bold uppercase tracking-[0.1em] text-base border-2 border-[#001b3c] transition-colors active:translate-y-[2px] active:translate-x-[2px] ${
-                filter === f
+                filter === s.value
                   ? 'bg-[#526a8d] text-white'
                   : 'bg-white text-[#001b3c] hover:bg-[#f0f3ff]'
               }`}
             >
-              {f}
+              {t(s.labelKey)}
             </button>
           ))}
           <span className="ml-auto text-[#43474e] text-sm font-grotesk uppercase tracking-wide self-center">
-            {filtered.length} recipes
+            {filtered.length} {t('navRecipes').toLowerCase()}
           </span>
         </div>
 
@@ -87,9 +98,8 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
           <div className="border-2 border-[#001b3c] bg-white p-16 text-center">
             <span className="material-symbols-outlined text-[#74777f] text-6xl block">restaurant_menu</span>
             <p className="font-grotesk uppercase font-bold text-[#001b3c] mt-4 text-lg tracking-wide">
-              No recipes found
+              {t('emptyRecipes')}
             </p>
-            <p className="text-[#43474e] mt-2 text-base">Try a different search or filter</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -123,10 +133,13 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
 }
 
 function RecipeCard({ recipe }: { recipe: RecipeRow }) {
+  const { lang, t } = useLanguage();
+  const title = (lang === 'es' && recipe.title_es) ? recipe.title_es : recipe.title;
+
   return (
     <Link href={`/dashboard/${recipe.id}`} className="flex">
       <article className="bg-white border-2 border-[#001b3c] flex flex-col overflow-hidden hover:border-[#526a8d] transition-colors duration-200 cursor-pointer w-full group">
-        {/* Placeholder band — no image field in schema */}
+        {/* Placeholder band */}
         <div className="h-32 bg-[#526a8d]/10 border-b-2 border-[#001b3c] flex items-center justify-center relative">
           <span className="font-grotesk font-bold uppercase tracking-[0.15em] text-xs text-[#526a8d]">
             {recipe.station ?? recipe.recipe_type}
@@ -144,13 +157,13 @@ function RecipeCard({ recipe }: { recipe: RecipeRow }) {
         {/* Content */}
         <div className="flex flex-col flex-1 p-4 gap-1">
           <h2 className="font-grotesk font-semibold uppercase text-[#001b3c] text-lg leading-tight">
-            {recipe.title}
+            {title}
           </h2>
           {recipe.yield && (
-            <p className="text-[#43474e] text-base">Yield: {recipe.yield}</p>
+            <p className="text-[#43474e] text-base">{t('labelYield')}: {recipe.yield}</p>
           )}
           {recipe.shelf_life && (
-            <p className="text-[#43474e] text-base">Shelf life: {recipe.shelf_life}</p>
+            <p className="text-[#43474e] text-base">{t('labelShelfLife')}: {recipe.shelf_life}</p>
           )}
         </div>
 
@@ -167,4 +180,3 @@ function RecipeCard({ recipe }: { recipe: RecipeRow }) {
     </Link>
   );
 }
-
