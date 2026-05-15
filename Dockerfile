@@ -46,6 +46,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/node_modules     ./node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./drizzle.config.ts
 COPY --from=builder --chown=nextjs:nodejs /app/src/db            ./src/db
 
+# Ingest script + brain helpers — invoked inside the container via:
+#   docker compose exec pellito-hub npx tsx src/scripts/ingest.ts
+COPY --from=builder --chown=nextjs:nodejs /app/src/scripts       ./src/scripts
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib           ./src/lib
+
 COPY --chown=nextjs:nodejs entrypoint.sh ./entrypoint.sh
 RUN chmod +x ./entrypoint.sh
 

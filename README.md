@@ -49,9 +49,9 @@ Pellito (the AI deckhand) answers cook questions grounded in recipe data. Retrie
 # Local — requires VOYAGE_API_KEY in .env
 npm run ingest
 
-# VPS
+# VPS — VOYAGE_API_KEY must be set in /docker/pellito-hub/.env
 cd /docker/pellito-hub
-VOYAGE_API_KEY=<key> docker compose exec app npm run ingest
+docker compose exec pellito-hub npx tsx src/scripts/ingest.ts
 ```
 
 The script is re-runnable: it skips chunks whose `content_hash` matches the existing brain entry. Run it after seeding new recipes, after a Manager edits any recipe content, or after Spanish translations are added.
