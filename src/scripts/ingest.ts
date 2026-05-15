@@ -76,8 +76,16 @@ async function ingest() {
   const outPath = brainPath();
   let existing: Brain = { model: 'voyage-3-lite', generated_at: '', chunks: [] };
   if (fs.existsSync(outPath)) {
-    existing = JSON.parse(fs.readFileSync(outPath, 'utf-8')) as Brain;
-    console.log(`🧠 Existing brain: ${existing.chunks.length} chunks (${existing.generated_at || 'unknown date'})`);
+    try {
+      const parsed = JSON.parse(fs.readFileSync(outPath, 'utf-8')) as Brain;
+      if (!parsed || !Array.isArray(parsed.chunks)) {
+        throw new Error('brain.json missing chunks array');
+      }
+      existing = parsed;
+      console.log(`🧠 Existing brain: ${existing.chunks.length} chunks (${existing.generated_at || 'unknown date'})`);
+    } catch (err) {
+      console.warn(`⚠  Existing brain.json is unreadable — starting fresh. (${err instanceof Error ? err.message : err})`);
+    }
   }
   const existingByKey = new Map<string, BrainChunk>();
   for (const c of existing.chunks) existingByKey.set(`${c.recipe_id}-${c.lang}`, c);
@@ -151,8 +159,14 @@ async function ingest() {
     chunks: [...reusable, ...newChunks],
   };
 
+  // Atomic write: write to a temp file in the same directory, then rename.
+  // Avoids leaving a truncated brain.json on crash / Ctrl-C, which would
+  // otherwise wedge the chat route into the empty-brain fallback until someone
+  // deletes the file.
   fs.mkdirSync(path.dirname(outPath), { recursive: true });
-  fs.writeFileSync(outPath, JSON.stringify(brain));
+  const tmpPath = `${outPath}.tmp`;
+  fs.writeFileSync(tmpPath, JSON.stringify(brain));
+  fs.renameSync(tmpPath, outPath);
 
   const sizeKB = (fs.statSync(outPath).size / 1024).toFixed(1);
   const elapsedSec = ((Date.now() - startedAt) / 1000).toFixed(1);

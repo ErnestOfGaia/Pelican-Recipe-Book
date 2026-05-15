@@ -52,9 +52,9 @@ export default function RecipeList({ initialRecipes }: { initialRecipes: RecipeR
         {/* Page heading */}
         <div className="py-6 border-b-2 border-[#001b3c] mb-6">
           <h1 className="font-grotesk font-black uppercase text-[#001b3c] text-5xl md:text-6xl tracking-tight leading-none">
-            GALLEY RECIPES
+            {t('galleyRecipesTitle')}
           </h1>
-          <p className="text-[#43474e] mt-2 text-lg">Pelican Brewery Kitchen Operations</p>
+          <p className="text-[#43474e] mt-2 text-lg">{t('galleyRecipesSubtitle')}</p>
         </div>
 
         {/* Search */}
@@ -170,10 +170,10 @@ function RecipeCard({ recipe }: { recipe: RecipeRow }) {
         {/* Footer */}
         <div className="bg-[#f0f3ff] border-t-2 border-[#001b3c] px-4 py-3 flex items-center justify-between">
           <span className="text-[#43474e] text-xs font-grotesk uppercase tracking-wide">
-            {recipe.ingredients.length} items
+            {recipe.ingredients.length} {t('recipeCardItems')}
           </span>
           <span className="font-grotesk font-bold uppercase tracking-widest text-xs text-[#526a8d] border-2 border-[#001b3c] bg-white px-3 py-2 group-hover:bg-[#526a8d] group-hover:text-white transition-colors">
-            VIEW OPS
+            {t('recipeCardViewOps')}
           </span>
         </div>
       </article>

@@ -16,7 +16,8 @@ const anthropic = createAnthropic({
 const RECIPE_PATTERNS = [
   // English food/recipe keywords
   /\bingredients?\b/i,
-  /\brecipe\b/i,
+  /\brecipes?\b/i,
+  /\bdish(es)?\b/i,
   /\bstep(s)?\b/i,
   /\bcook(ing|ed|s)?\b/i,
   /\bprepare\b|preparation|prep(ping)?\b/i,
@@ -24,9 +25,10 @@ const RECIPE_PATTERNS = [
   /\bgarnish/i,
   /\bserv(e|ing|ings|ed|es)\b/i,
   /\ballergen|allerg(y|ic)/i,
+  /\b(soy|gluten|dairy|nuts?|shellfish|fish|eggs?|wheat|lactose)\b/i,
   /\bshelf[ -]?life\b/i,
   /\byield\b/i,
-  /\bsauce\b|\bdressing\b|\bmarinades?\b/i,
+  /\bsauces?\b|\bdressings?\b|\bmarinades?\b/i,
   /\bplateware\b/i,
   /\boz\b|\bounce(s)?\b|\bportion(s)?\b/i,
   // English compound patterns

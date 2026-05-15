@@ -36,7 +36,20 @@ export function loadBrain(): Brain {
     cached = { model: VOYAGE_MODEL, generated_at: '', chunks: [] };
     return cached;
   }
-  cached = JSON.parse(fs.readFileSync(p, 'utf-8')) as Brain;
+  try {
+    const raw = fs.readFileSync(p, 'utf-8');
+    const parsed = JSON.parse(raw) as Brain;
+    if (!parsed || !Array.isArray(parsed.chunks)) {
+      throw new Error('brain.json missing chunks array');
+    }
+    cached = parsed;
+  } catch (err) {
+    // Malformed brain.json (truncated write, corrupted file) — fall back to the
+    // empty-brain behavior so the route hits the full-corpus fallback path
+    // instead of 500-ing every request until someone SSHes in.
+    console.error(`[brain] failed to load ${p}, falling back to empty brain:`, err);
+    cached = { model: VOYAGE_MODEL, generated_at: '', chunks: [] };
+  }
   return cached;
 }
 

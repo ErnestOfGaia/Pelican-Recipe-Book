@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getRole } from '@/lib/get-role';
 import { BottomNav } from '@/components/BottomNav';
 import LogoutLink from '@/components/LogoutLink';
+import { LanguageToggle } from '@/components/LanguageToggle';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +20,7 @@ export default async function HomePage() {
             PELLITO HUB
           </span>
         </div>
-        <span className="font-grotesk font-bold uppercase text-[#526a8d] text-sm">EN | ES</span>
+        <LanguageToggle />
       </header>
 
       <main className="pt-[64px] pb-[100px] px-6 max-w-6xl mx-auto">

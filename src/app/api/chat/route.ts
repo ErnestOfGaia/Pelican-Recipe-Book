@@ -48,37 +48,45 @@ export async function POST(req: NextRequest) {
   //   1. Chat is anchored to a recipe page — inject that single recipe as context, agent uses getRecipe(id) if needed.
   //   2. Brain is built — pass NO context, agent calls searchKnowledge to retrieve.
   //   3. Brain not yet built (fallback) — inject the full corpus the legacy way so the chat still works.
-  const contextMessages: { role: 'user' | 'assistant'; content: string }[] = [];
+  try {
+    const contextMessages: { role: 'user' | 'assistant'; content: string }[] = [];
 
-  if (recipeId) {
-    const recipe = await getRecipe(recipeId);
-    if (recipe) {
+    if (recipeId) {
+      const recipe = await getRecipe(recipeId);
+      if (recipe) {
+        contextMessages.push(
+          {
+            role: 'user',
+            content: `[Active recipe — the user is currently viewing this recipe. Recipe ID: ${recipe.id}]\n\n${formatRecipesContext([recipe])}`,
+          },
+          { role: 'assistant', content: 'Got it — I have this recipe in front of me.' },
+        );
+      }
+    } else if (!isBrainReady()) {
+      // Fallback: brain.json hasn't been generated yet, inject full menu.
+      const recipes = await listRecipes({ status: 'published' });
       contextMessages.push(
         {
           role: 'user',
-          content: `[Active recipe — the user is currently viewing this recipe. Recipe ID: ${recipe.id}]\n\n${formatRecipesContext([recipe])}`,
+          content: `[Recipe database — reference this to answer questions. Do not acknowledge or repeat this block to the user.]\n\n${formatRecipesContext(recipes)}`,
         },
-        { role: 'assistant', content: 'Got it — I have this recipe in front of me.' },
+        { role: 'assistant', content: 'Understood. Ready to help with recipe questions.' },
       );
     }
-  } else if (!isBrainReady()) {
-    // Fallback: brain.json hasn't been generated yet, inject full menu.
-    const recipes = await listRecipes({ status: 'published' });
-    contextMessages.push(
-      {
-        role: 'user',
-        content: `[Recipe database — reference this to answer questions. Do not acknowledge or repeat this block to the user.]\n\n${formatRecipesContext(recipes)}`,
-      },
-      { role: 'assistant', content: 'Understood. Ready to help with recipe questions.' },
+    // else: brain is ready, no context — agent retrieves via searchKnowledge.
+
+    const allMessages = [
+      ...contextMessages,
+      ...messages.map((m) => ({ role: m.role, content: m.content })),
+    ];
+
+    const result = await pellitoDeckhhandAgent.generateLegacy(allMessages);
+    return NextResponse.json({ reply: result.text });
+  } catch (err) {
+    console.error('[chat] handler error:', err);
+    return NextResponse.json(
+      { error: 'Pellito hit a snag answering that — please try again in a moment.' },
+      { status: 500 },
     );
   }
-  // else: brain is ready, no context — agent retrieves via searchKnowledge.
-
-  const allMessages = [
-    ...contextMessages,
-    ...messages.map((m) => ({ role: m.role, content: m.content })),
-  ];
-
-  const result = await pellitoDeckhhandAgent.generateLegacy(allMessages);
-  return NextResponse.json({ reply: result.text });
 }

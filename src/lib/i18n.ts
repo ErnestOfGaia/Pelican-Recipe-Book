@@ -23,6 +23,10 @@ export const i18n = {
     labelBack: 'Back to recipes',
 
     // Dashboard / recipe list
+    galleyRecipesTitle: 'GALLEY RECIPES',
+    galleyRecipesSubtitle: 'Pelican Brewery Kitchen Operations',
+    recipeCardItems: 'items',
+    recipeCardViewOps: 'VIEW OPS',
     searchPlaceholder: 'Search recipes…',
     filterAll: 'All',
     filterSaute: 'Saute',
@@ -101,6 +105,10 @@ export const i18n = {
     labelBack: 'Volver a recetas',
 
     // Dashboard / recipe list
+    galleyRecipesTitle: 'RECETAS DE COCINA',
+    galleyRecipesSubtitle: 'Operaciones de Cocina de Pelican Brewery',
+    recipeCardItems: 'artículos',
+    recipeCardViewOps: 'VER RECETA',
     searchPlaceholder: 'Buscar recetas…',
     filterAll: 'Todo',
     filterSaute: 'Salteado',
