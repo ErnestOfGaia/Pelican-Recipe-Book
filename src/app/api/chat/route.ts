@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const contextMessages: { role: 'user' | 'assistant'; content: string }[] = [];
 
     if (recipeId) {
-      const recipe = await getRecipe(recipeId);
+      const recipe = await getRecipe(recipeId!);
       if (recipe) {
         contextMessages.push(
           {
