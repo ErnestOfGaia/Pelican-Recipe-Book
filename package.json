@@ -12,12 +12,14 @@
     "seed": "tsx src/scripts/seed-from-csv.ts",
     "seed:questions": "tsx src/scripts/seed-questions.ts",
     "seed:all": "npm run seed && npm run seed:questions",
-    "ingest": "tsx --env-file-if-exists=.env src/scripts/ingest.ts"
+    "ingest": "tsx --env-file-if-exists=.env src/scripts/ingest.ts",
+    "translate": "tsx --env-file-if-exists=.env src/scripts/translate-recipes.ts"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^1.2.0",
-    "@mastra/core": "^1.15.0",
+    "@ai-sdk/anthropic": "^3.0.81",
     "@libsql/client": "^0.14.0",
+    "@mastra/core": "^1.15.0",
+    "ai": "^6.0.195",
     "drizzle-orm": "^0.44.0",
     "next": "^15.3.0",
     "react": "^19.0.0",
@@ -25,14 +27,14 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "drizzle-kit": "^0.31.0",
-    "tsx": "^4.19.0",
     "postcss": "^8.5.0",
     "tailwindcss": "^4.1.0",
-    "typescript": "^5.8.0",
-    "@tailwindcss/postcss": "^4.1.0"
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
   }
 }
