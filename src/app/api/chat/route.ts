@@ -24,6 +24,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // GREETING MODE — Pellito agent temporarily offline while menu is updated
+  return NextResponse.json({
+    reply:
+      "Hi! I'm Pellito the Deckhand. The recipe assistant is getting an update — check back soon. In the meantime, browse the menu and test your knowledge with the quiz!",
+  });
+
+  // eslint-disable-next-line no-unreachable
   let body: { messages: { role: 'user' | 'assistant'; content: string }[]; recipeId?: string };
   try {
     body = await req.json();
