@@ -1,8 +1,8 @@
 # Pellito Hub
 
-Kitchen training app for Pelican Brewery. Line Cooks browse recipes and take quizzes; Managers create and publish recipes, track quiz performance, and chat with the Deckhand AI agent.
+Kitchen training app for a coastal restaurant kitchen. Line Cooks browse recipes and take quizzes; Managers create and publish recipes, track quiz performance, and chat with the Deckhand AI agent.
 
-Built with Next.js 14, Drizzle ORM, and SQLite (libsql). Deployed to `pelican.mechanicalcupcakes.fun` via Docker on a Hostinger VPS.
+Built with Next.js 15, Drizzle ORM, and SQLite (libsql). Deployed to `pelican.mechanicalcupcakes.fun` via Docker on a Hostinger VPS.
 
 ---
 

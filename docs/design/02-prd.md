@@ -8,13 +8,13 @@ last_updated: 2026-04-28
 
 ## Problem Statement
 
-Ernest's employer, **Pelican Brewery** in Pacific City, Oregon, is doubling its kitchen staff with seasonal hires — mostly college students with little to no kitchen experience. Their current training material is a single binder of recipes printed in tiny font. Hires can't read the binder on the line, can't take it home to study, and can't use it to test their own knowledge. The Training Manager re-explains the same recipes every season, and during shift, bilingual managers become the translation bottleneck for Spanish-speaking staff. The Training Manager has no visibility into which recipes new hires actually struggle with, so coaching is reactive instead of targeted.
+The restaurant kitchen I was working in is doubling its staff with seasonal hires — mostly college students with little to no kitchen experience. Their current training material is a single binder of recipes printed in tiny font. Hires can't read the binder on the line, can't take it home to study, and can't use it to test their own knowledge. The Training Manager re-explains the same recipes every season, and during shift, bilingual managers become the translation bottleneck for Spanish-speaking staff. The Training Manager has no visibility into which recipes new hires actually struggle with, so coaching is reactive instead of targeted.
 
-There is no Pellito Hub deployment live anywhere today; the previous "Pelican" scaffolds were never seeded with real recipes and have been archived.
+There is no Pellito Hub deployment live anywhere today; the previous scaffolds were never seeded with real recipes and have been archived.
 
 ## Solution
 
-A mobile-first, role-filtered recipe and self-quiz web app that replaces the binder. Staff log in on their phone with shared role credentials, browse menu item recipes with readable layout, take auto-generated 5-question quizzes (with optional 3-question hard follow-ups), and ask Pellito — a Mastra-powered "deckhand" agent in Pelican Brewery's branding — questions about a recipe. Spanish translations of UI and recipe content land at V2. The Training Manager logs in to a separate admin view with a dashboard of anonymous aggregate metrics (most-missed questions, quiz completion, active sessions) and edits recipes inline with instant publish.
+A mobile-first, role-filtered recipe and self-quiz web app that replaces the binder. Staff log in on their phone with shared role credentials, browse menu item recipes with readable layout, take auto-generated 5-question quizzes (with optional 3-question hard follow-ups), and ask Pellito — a Mastra-powered "deckhand" agent in the restaurant's coastal branding — questions about a recipe. Spanish translations of UI and recipe content land at V2. The Training Manager logs in to a separate admin view with a dashboard of anonymous aggregate metrics (most-missed questions, quiz completion, active sessions) and edits recipes inline with instant publish.
 
 The app is built in 5 stages — Prototype → V1 → V2 → V3 → MVP — on the dev domain `pellito.mechanicalcupcakes.fun`, with stable cuts copied to `pellito.ernestofgaia.xyz` for the employer pitch starting at V2.
 
@@ -64,10 +64,10 @@ The app is built in 5 stages — Prototype → V1 → V2 → V3 → MVP — on t
 42. As Ernest (developer), I want the Pellito Agent's tool surface to grow without breaking callers, so that prototype context-injection and V2 RAG share the same `searchRecipes` tool name.
 43. As Ernest (developer), I want a single `/api/health` endpoint returning 200, so that the NPM reverse proxy and uptime checks have a stable target.
 44. As Ernest (developer), I want all secrets in `.env` (never committed), so that the VPS deploy path matches the rest of the EoG project standards.
-45. As a Pelican Brewery owner watching the pitch (V2 demo), I want to see English/Spanish flip live on a phone with a Pelican Brewery menu item, so that I believe the bilingual claim.
-46. As Ernest (developer), I want the old `pelican-archive/` deleted only after V2 ships green, so that I can borrow patterns from it without risk during prototype/V1.
+45. As the restaurant owner watching the pitch (V2 demo), I want to see English/Spanish flip live on a phone with a real menu item, so that I believe the bilingual claim.
+46. As Ernest (developer), I want the old archived prototype deleted only after V2 ships green, so that I can borrow patterns from it without risk during prototype/V1.
 47. As Ernest (developer), I want the new build to live in `websites/Pellito Hub/pellito-hub/`, so that the codebase is clearly separated from archived attempts.
-48. As Ernest (developer), I want the Mastra agent prompted as "Pellito the Deckhand" with Pelican Brewery's nautical/coastal voice, so that branding is consistent end-to-end.
+48. As Ernest (developer), I want the Mastra agent prompted as "Pellito the Deckhand" with the restaurant's nautical/coastal voice, so that branding is consistent end-to-end.
 
 ## Implementation Decisions
 
@@ -94,7 +94,7 @@ The build decomposes into seven deep modules and several shallow surfaces:
 
 ### Schema
 
-Ported from `pelican-archive/pelican-next-prisma-apr/prisma/schema.prisma` to Drizzle, with these changes:
+Ported from the archived Prisma prototype's `schema.prisma` to Drizzle, with these changes:
 
 - Drop `Scrapbook` (no in-app vision ingest in this build)
 - Drop "Russian" from any language enum/check; only "English" / "Spanish"
@@ -127,15 +127,15 @@ Ported from `pelican-archive/pelican-next-prisma-apr/prisma/schema.prisma` to Dr
 - **Stage-based deploy:** Prototype runs locally; as soon as the core loop works it Dockerizes and deploys to `pellito.mechanicalcupcakes.fun`. V1+ continues there. V2/V3/MVP green cuts get manually copied to `pellito.ernestofgaia.xyz`.
 - **VPS deploy pattern** per `DEPLOYMENT_STANDARDS & VPS Tips.md`: Hostinger VPS, Docker, Nginx Proxy Manager, container hostname matches NPM target, internal Docker network, no host port mapping.
 
-### Borrow list from `pelican-archive/pelican-next-prisma-apr/`
+### Borrow list from the archived Prisma prototype
 
-Per `pelican-archive/README.md` and `ops/archive-cleanup.md`:
+Per the archived prototype's README and `ops/archive-cleanup.md`:
 
 1. Prisma schema → port to Drizzle
 2. Auth middleware + login/logout route shape
-3. Mastra agent system-prompt direction ("coastal brewery mascot")
+3. Mastra agent system-prompt direction ("coastal mascot")
 4. View component layout shells (strip placeholder copy)
-5. Pelican Brewery branding strings ("Deckhand Burger," "House Pilsner," etc.)
+5. Client branding strings (menu-item names, house drinks, etc.)
 6. Admin stats route shape
 7. Health endpoint
 
@@ -161,18 +161,18 @@ No actual recipe data exists in the archive; the 24 recipes still come from the 
 
 ### Prior art
 
-- The archived `pelican-archive/pelican-next-prisma-apr/` had no test suite to mirror. Establish vitest as the runner for the rewrite.
+- The archived Prisma prototype had no test suite to mirror. Establish vitest as the runner for the rewrite.
 - The `MASTRA_SDK_PREFLIGHT.md` doesn't prescribe a test pattern; this project sets the precedent for future Mastra projects under the EoG umbrella.
 
 ## Out of Scope
 
 - **Per-user accounts and individual progress tracking.** Anonymous aggregate only. If the buyer requests this later, it is paid scope.
 - **In-app vision ingest / image upload pipeline.** Recipes are scraped externally via an LLM session and imported via CSV.
-- **Russian language support.** Was aspirational in the archived README; not a real staff need at Pelican Brewery.
+- **Russian language support.** Was aspirational in the archived README; not a real staff need at this kitchen.
 - **Prep Cook and FOH role views as built features.** Schema stays future-proof but UI does not ship until in-house ingredient recipes (Prep) and marketing/plating docs (FOH) are provided. Earliest activation: V3.
 - **Real-time-during-service tooling.** This app is for training and lookup, not live ticket management or timer choreography.
-- **Multi-tenant / multi-restaurant support.** The first deploy is single-tenant for Pelican Brewery. The portable-demo fallback is also single-tenant — repackaged per customer.
-- **Customer-facing branded subdomain** (e.g. `training.pelicanbrewery.com`). Optional, MVP stage only, contingent on the employer signing.
+- **Multi-tenant / multi-restaurant support.** The first deploy is single-tenant. The portable-demo fallback is also single-tenant — repackaged per customer.
+- **Customer-facing branded subdomain** (e.g. a client's own `training.` subdomain). Optional, MVP stage only, contingent on the client signing.
 - **POS / payroll / scheduling integrations.** Not in any stage.
 - **Voice input/output.** Deferred to V3.
 - **Full RAG pipeline.** Deferred to V2.
@@ -180,9 +180,9 @@ No actual recipe data exists in the archive; the 24 recipes still come from the 
 
 ## Further Notes
 
-- **Source documents** that fed this PRD: `design/01-grill-me-summary.md`, `PROJECT_BRIEF.md`, `Ideas & Projects/A Priori/MASTRA_SDK_PREFLIGHT.md`, `Ideas & Projects/A Priori/DEPLOYMENT_STANDARDS & VPS Tips.md`, `pelican-archive/README.md`.
-- **Branding:** All visual identity follows the **Coastal Industrial Utility** design system documented in `design/07-design-system.md`. Light mode only. Primary color: Coastal Blue (`#526a8d`). Background: near-white `#f9f9ff`. No dark navy backgrounds — earlier issue descriptions referencing `bg-slate-900` / amber / blue CTAs are superseded by the stitch-derived spec. The "Pellito the Deckhand" agent persona is a deliberate continuation of Pelican Brewery's nautical/coastal voice, not generic AI-mascot styling.
-- **Buyer relationship:** Ernest is currently employed at Pelican Brewery; the pitch target is the Training Manager. If the pitch lands, the engagement converts to paid work. If it doesn't, the app remains as a portable demo for any local restaurant and a Mastra showcase under the Ernest of Gaia portfolio.
+- **Source documents** that fed this PRD: `design/01-grill-me-summary.md`, `PROJECT_BRIEF.md`, `Ideas & Projects/A Priori/MASTRA_SDK_PREFLIGHT.md`, `Ideas & Projects/A Priori/DEPLOYMENT_STANDARDS & VPS Tips.md`, the archived prototype's README.
+- **Branding:** All visual identity follows the **Coastal Industrial Utility** design system documented in `design/07-design-system.md`. Light mode only. Primary color: Coastal Blue (`#526a8d`). Background: near-white `#f9f9ff`. No dark navy backgrounds — earlier issue descriptions referencing `bg-slate-900` / amber / blue CTAs are superseded by the stitch-derived spec. The "Pellito the Deckhand" agent persona is a deliberate continuation of the restaurant's nautical/coastal voice, not generic AI-mascot styling.
+- **Buyer relationship:** Ernest was working in the kitchen at the time; the pitch target is its Training Manager. If the pitch lands, the engagement converts to paid work. If it doesn't, the app remains as a portable demo for any local restaurant and a Mastra showcase under the Ernest of Gaia portfolio.
 - **Urgency:** No Pellito deployment exists today. Prototype-to-VPS is the immediate priority — we Dockerize and ship to `pellito.mechanicalcupcakes.fun` as soon as the local loop works, even before all V1 features are in place.
 - **Data dependency:** Real recipe data must be scraped from the 24 photos at `websites/Pellito Hub/clean pantry kitchen recipes 24/` in a separate LLM session before V1 can ship. The exact recipe field shape is finalized after that session and recorded in `design/03-data-model.md` and `ingest/recipe-schema.md`.
 - **Stage exit criteria** are tracked one-per-file in `stages/` (`prototype.md`, `v1.md`, `v2.md`, `v3.md`, `mvp.md`).
